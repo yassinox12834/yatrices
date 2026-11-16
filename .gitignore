@@ -1,0 +1,53 @@
+build/
+_build/
+dist/
+*.egg-info/
+__pycache__/
+*.so
+*.pyd
+*.dll
+*.dylib
+*.o
+*.obj
+.vscode/
+.idea/
+compile_commands.json
+
+# Personal learning material, kept on my computer only
+lessons/
+why_I_do_this*.pdf
+
+# Files generated with Claude, not part of the library
+Claude outputs/
+
+# Programs and libraries you compile yourself
+*.exe
+*.a
+*.lib
+*.pdb
+*.ilk
+*.exp
+
+# Python tools' caches and environments
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+*.pyc
+_skbuild/
+
+# Other build folders and editor caches
+cmake-build-*/
+out/
+.cache/
+
+# Logs and temporary scripts
+*.log
+yatrices_*.bat
+
+# Secrets and operating-system clutter
+.env
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "pybind11>=2.12"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "yatricespy"
+version = "0.0.1"
+description = "Linear algebra in C++ with a Python front end"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest", "numpy"]
+
+[tool.scikit-build]
+cmake.args = ["-DYATRICES_BUILD_PYTHON=ON", "-DYATRICES_BUILD_TESTS=OFF", "-DYATRICES_BUILD_EXAMPLES=OFF"]
+wheel.packages = ["python/yatricespy"]
+wheel.install-dir = ""
+
+[tool.pytest.ini_options]
+testpaths = ["python/tests"]
