@@ -59,6 +59,9 @@ Each side has its own guide with the full list of what's available: [Python](pyt
 
 <p align="center"><img src="assets/github/images/banner-wip.png" alt="Work in progress, even the bits marked done" width="100%"></p>
 
+<!-- COMPARE: v2 below, delete whichever loses -->
+<p align="center"><img src="assets/github/images/banner-wip-v2.png" alt="Work in progress, even the bits marked done" width="100%"></p>
+
 The vector type is done, in both languages: `Vec` (double) and `Vecf` (float), with arithmetic, `dot`, `cross`, norms, sums and means, `angle`, `project`, `allclose`, and error messages that actually tell you what went wrong. But even the "finished" bits have plenty left to do:
 
 - the C++ side has no automated tests yet (`cpp/tests/test_main.cpp` is empty)
@@ -92,6 +95,9 @@ You're very welcome, whatever your level. If you're learning this stuff too, eve
 One small thing: since I'm using this project to learn, I might occasionally ask to write a feature myself, even if you've already solved it. Please don't take it personally. Reviews and "have you thought about…?" comments are always appreciated.
 
 <p align="center"><img src="assets/github/images/banner-star.png" alt="Found this useful? A star would be lovely" width="100%"></p>
+
+<!-- COMPARE: v2 below, delete whichever loses -->
+<p align="center"><img src="assets/github/images/banner-star-v2.png" alt="Found this useful? A star would be lovely" width="100%"></p>
 
 ## Licence
 
