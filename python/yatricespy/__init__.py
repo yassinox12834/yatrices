@@ -29,13 +29,10 @@ from ._yatricespy import (
     ZeroVectorError,
 )
 
-# Same names as in C++: Vecd is Vec<double>, Vecf is Vec<float>.
 Vecd = Vec
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
-# IndexError is deliberately left out of __all__: `from yatricespy import *`
-# would otherwise hide Python's own IndexError in your file. Use yt.IndexError.
 __all__ = [
     "Vec", "Vecd", "Vecf",
     "allclose", "angle", "approx_equal", "cross", "hadamard", "project",
