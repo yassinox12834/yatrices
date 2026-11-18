@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.0.1-0aa5a5">
+  <img alt="version" src="https://img.shields.io/badge/version-0.0.2-0aa5a5">
   <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-0b6e8a">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-14a86b">
   <img alt="status" src="https://img.shields.io/badge/status-early%20days-lightgrey">
@@ -26,6 +26,8 @@ So it's a learning project above all. I'd much rather understand a hundred lines
 **About the logo:** it's a spotted eagle ray. Rays glide along with hardly any effort, and that's how I'd like the library to feel. Operations should chain together naturally (`x + y + z`), and nothing should be heavier than it needs to be: a `Vec` is 16 bytes plus its data, with nothing hidden.
 
 ## Getting started
+
+> **Coming later:** I'll publish yatricespy on [PyPI](https://pypi.org/) (so `pip install yatricespy` just works) and YatricesEngine on [vcpkg](https://vcpkg.io/). Until then, you build both from this folder as shown below.
 
 You'll need CMake 3.20 or later, a C++17 compiler and, for the Python side, Python 3.10 or later.
 
@@ -59,13 +61,15 @@ Each side has its own guide with the full list of what's available: [Python](pyt
 
 <p align="center"><img src="assets/github/images/banner-wip.png" alt="Work in progress, even the bits marked done" width="100%"></p>
 
-The vector type is done, in both languages: `Vec` (double) and `Vecf` (float), with arithmetic, `dot`, `cross`, norms, sums and means, `angle`, `project`, `allclose`, and error messages that actually tell you what went wrong. But even the "finished" bits have plenty left to do:
+The vector type is done, in both languages: `Vec` (double) and `Vecf` (float), with arithmetic, `dot`, `cross`, norms, sums and means, `angle`, `project`, `allclose`, and error messages that actually tell you what went wrong.
 
-- the C++ side has no automated tests yet (`cpp/tests/test_main.cpp` is empty)
+Since 0.0.2 the C++ engine also has a `Matrix` type (`Matrixf` and `Matrixd`): arithmetic, transpose, trace, diagonals, row operations, reductions and broadcasting, all checked by real C++ tests. But even the "finished" bits have plenty left to do:
+
+- `Matrix` is C++ only for now; yatricespy can't see it yet
+- there's no matrix-vector or matrix-matrix product (that's next, see the roadmap)
+- the newer `Vec` functions (`argmin`, `argmax`, `normalise`, `==`, ...) aren't in Python yet either
 - you can't convert to or from NumPy arrays without going through a list
-- there's no element-wise `abs`, `sqrt`, `exp` or division
-- there's no `==`, `argmin`, `argmax`, slicing or views
-- `Matrix` doesn't exist yet
+- there's no element-wise `abs`, `sqrt`, `exp` or division, and no slicing or views
 
 There are no tutorials yet either. The plan is a short one for every algorithm, explaining what it does and why it works, and they'll go in [`docs/`](docs/) later on.
 
@@ -77,7 +81,7 @@ What's coming next is listed in [ROADMAP.md](ROADMAP.md), and everything that ha
 cpp/      YatricesEngine, the C++ core (knows nothing about Python)
 python/   yatricespy, the Python package
 docs/     one tutorial per concept (none written yet)
-after/    stubs for everything planned after 0.0.1
+after/    stubs for everything planned after 0.0.2
 assets/   logo and banners
 ```
 

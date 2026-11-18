@@ -21,7 +21,7 @@ Be careful which `python` you run: on a machine with MSYS2, typing `python` may 
 & "C:\Users\you\AppData\Local\Python\bin\python.exe" -m pip install ".[test]"
 ```
 
-The dot at the end means "this folder": pip builds the package from your copy and never downloads Yatrices from PyPI.
+The dot at the end means "this folder": pip builds the package from your copy and never downloads Yatrices from PyPI. yatricespy isn't on PyPI yet; I'll publish it there later, and then `pip install yatricespy` will be enough.
 
 After changing any C++ file, run the `pip install` line again to rebuild.
 
