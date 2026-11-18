@@ -27,6 +27,8 @@ After changing any C++ file, run the `pip install` line again to rebuild.
 
 ## Using it
 
+It is wholeheartedly recommended to import the package as `import yatricespy as yt`. It's the same kind of acronym as `import numpy as np`, and all the examples here use it.
+
 ```python
 import yatricespy as yt
 

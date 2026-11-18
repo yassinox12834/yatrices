@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img alt="version" src="https://img.shields.io/badge/version-0.0.2-0aa5a5">
+  <a href="https://github.com/yassinox12834/yatrices/releases/latest"><img alt="latest release" src="https://img.shields.io/github/v/release/yassinox12834/yatrices?color=0aa5a5"></a>
   <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-0b6e8a">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-14a86b">
   <img alt="status" src="https://img.shields.io/badge/status-early%20days-lightgrey">
@@ -29,6 +29,8 @@ So it's a learning project above all. I'd much rather understand a hundred lines
 
 > **Coming later:** I'll publish yatricespy on [PyPI](https://pypi.org/) (so `pip install yatricespy` just works) and YatricesEngine on [vcpkg](https://vcpkg.io/). Until then, you build both from this folder as shown below.
 
+For the version number, rely on the [latest GitHub release](https://github.com/yassinox12834/yatrices/releases/latest). It is the reference; the badge above reads from it, and the files in this folder may be ahead of the last release.
+
 You'll need CMake 3.20 or later, a C++17 compiler and, for the Python side, Python 3.10 or later.
 
 **Python** (pip compiles the engine for you, so a C++ compiler must be on your PATH; on Windows, MSYS2's g++ works):
@@ -46,6 +48,8 @@ print(x + y)           # [5, 7, 9]
 print(x @ y)           # 32.0
 print(yt.cross(x, y))  # [-3, 6, -3]
 ```
+
+Importing it as `yt` is wholeheartedly recommended: write `import yatricespy as yt`. It's the same kind of acronym as `import numpy as np`, short to type and instantly recognisable, and every example in this repository uses it.
 
 **C++:**
 
