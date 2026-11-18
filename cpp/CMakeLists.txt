@@ -1,4 +1,3 @@
-# YatricesEngine: pure C++ core, knows nothing about Python.
 add_library(YatricesEngine STATIC
     src/errors.cpp
     src/vector.cpp
