@@ -12,115 +12,32 @@
 #include <string>
 #include <utility>
 
-#if defined(__GNUC__) || defined(__clang__)
-#define YATRICES_RESTRICT __restrict__
-#elif defined(_MSC_VER)
-#define YATRICES_RESTRICT __restrict
-#else
-#define YATRICES_RESTRICT
-#endif
+#include "internal.hpp"
 
 namespace yatrices {
 namespace {
 
-constexpr std::align_val_t kAlign{Vec<double>::alignment};
-
-// Tell the compiler the pointer is 64-byte aligned (it always is, see allocate).
-template <typename T>
-inline T* aligned(T* p) noexcept {
-#if defined(__GNUC__) || defined(__clang__)
-    return static_cast<T*>(__builtin_assume_aligned(p, Vec<double>::alignment));
-#else
-    return p;
-#endif
-}
-
-template <typename T>
-T* allocate(std::size_t n) {
-    if (n == 0) return nullptr;
-    if (n > static_cast<std::size_t>(-1) / sizeof(T)) {
-        throw AllocationSizeError(n, sizeof(T));
-    }
-    try {
-        return static_cast<T*>(::operator new(n * sizeof(T), kAlign));
-    } catch (const std::bad_alloc&) {
-        throw OutOfMemoryError(n, sizeof(T));
-    }
-}
-
-void release(void* p) noexcept {
-    if (p != nullptr) ::operator delete(p, kAlign);
-}
-
-// Number of independent running sums in dot(). A float add has a latency of
-// about 4 cycles but the CPU can start 2 per cycle, so one running sum leaves
-// the adder idle most of the time. 128 bytes of sums = 8 AVX2 registers.
-template <typename T>
-constexpr std::size_t kSums = 128 / sizeof(T);   // 32 floats, 16 doubles
-
-template <typename T>
-T dot_kernel(const T* YATRICES_RESTRICT a, const T* YATRICES_RESTRICT b,
-             std::size_t n) noexcept {
-    constexpr std::size_t K = kSums<T>;
-    T sums[K] = {};
-    std::size_t i = 0;
-    for (; i + K <= n; i += K) {
-        for (std::size_t j = 0; j < K; ++j) sums[j] += a[i + j] * b[i + j];
-    }
-    for (std::size_t w = K / 2; w > 0; w /= 2) {        // pairwise reduction
-        for (std::size_t j = 0; j < w; ++j) sums[j] += sums[j + w];
-    }
-    T total = sums[0];
-    for (; i < n; ++i) total += a[i] * b[i];
-    return total;
-}
-
-template <typename T>
-void axpy_kernel(T* YATRICES_RESTRICT y, const T* YATRICES_RESTRICT x, T alpha,
-                 std::size_t n) noexcept {
-    for (std::size_t i = 0; i < n; ++i) y[i] += alpha * x[i];
-}
-
-// Element-wise kernels. __restrict__ promises the pointers do not overlap, which
-// lets the compiler load and store whole SIMD registers at a time.
-template <typename T, typename Op>
-void zip_kernel(T* YATRICES_RESTRICT out, const T* YATRICES_RESTRICT a,
-                const T* YATRICES_RESTRICT b, std::size_t n, Op op) noexcept {
-    for (std::size_t i = 0; i < n; ++i) out[i] = op(a[i], b[i]);
-}
-
-template <typename T, typename Op>
-void map_kernel(T* YATRICES_RESTRICT out, const T* YATRICES_RESTRICT a, std::size_t n,
-                Op op) noexcept {
-    for (std::size_t i = 0; i < n; ++i) out[i] = op(a[i]);
-}
-
-// Sum of f(a_i) with kSums independent running sums (the idea of dot_kernel).
-template <typename T, typename F>
-T sum_map_kernel(const T* a, std::size_t n, F f) noexcept {
-    constexpr std::size_t K = kSums<T>;
-    T sums[K] = {};
-    std::size_t i = 0;
-    for (; i + K <= n; i += K) {
-        for (std::size_t j = 0; j < K; ++j) sums[j] += f(a[i + j]);
-    }
-    for (std::size_t w = K / 2; w > 0; w /= 2) {
-        for (std::size_t j = 0; j < w; ++j) sums[j] += sums[j + w];
-    }
-    T total = sums[0];
-    for (; i < n; ++i) total += f(a[i]);
-    return total;
-}
+using detail::aligned;
+using detail::allocate;
+using detail::map_kernel;
+using detail::release;
+using detail::sum_map_kernel;
+using detail::sum_zip_kernel;
+using detail::update_kernel;
+using detail::zip_kernel;
 
 [[noreturn]] void throw_size_mismatch(const char* who, std::size_t a, std::size_t b) {
     throw SizeMismatchError(who, a, b);
 }
 
-}  // namespace
+}
+
+static_assert(Vec<double>::alignment == detail::kAlignment,
+              "Vec::alignment and the allocator must agree");
 
 template <typename T>
 Vec<T>::Vec(std::size_t n) : data_(allocate<T>(n)), size_(n) {
-    if (n != 0) std::memset(data_, 0, n * sizeof(T));   // all-bits-zero is 0.0
+    if (n != 0) std::memset(data_, 0, n * sizeof(T));
 }
 
 template <typename T>
@@ -153,7 +70,7 @@ Vec<T>& Vec<T>::operator=(const Vec& other) {
     if (size_ == other.size_) {
         if (size_ != 0) std::memcpy(data_, other.data_, size_ * sizeof(T));
     } else {
-        Vec copy(other);                        // may throw; *this untouched
+        Vec copy(other);
         swap(copy);
     }
     return *this;
@@ -207,31 +124,29 @@ template <typename T>
 void Vec<T>::axpy(T alpha, const Vec& x) {
     if (size_ != x.size_) throw_size_mismatch("Vec::axpy", size_, x.size_);
     if (size_ == 0) return;
-    if (this == &x) {                           // aliasing: restrict would be a lie
+    if (this == &x) {
         for (std::size_t i = 0; i < size_; ++i) data_[i] += alpha * data_[i];
         return;
     }
-    axpy_kernel(aligned(data_), aligned(x.data_), alpha, size_);
+    detail::axpy_kernel(aligned(data_), aligned(x.data_), alpha, size_);
 }
 
 template <typename T>
 T Vec<T>::dot(const Vec& other) const {
     if (size_ != other.size_) throw_size_mismatch("Vec::dot", size_, other.size_);
     if (size_ == 0) return T{0};
-    return dot_kernel(aligned(data_), aligned(other.data_), size_);
+    return detail::dot_kernel(aligned(data_), aligned(other.data_), size_);
 }
 
 template <typename T>
 Vec<T>& Vec<T>::operator+=(const Vec& other) {
     if (size_ != other.size_) throw_size_mismatch("Vec::operator+=", size_, other.size_);
     if (size_ == 0) return *this;
-    if (this == &other) {                       // x += x: restrict would be a lie
+    if (this == &other) {
         for (std::size_t i = 0; i < size_; ++i) data_[i] += data_[i];
         return *this;
     }
-    // y_i = y_i + x_i. No multiplication by 1, and the size is checked only once.
-    zip_kernel(aligned(data_), aligned(data_), aligned(other.data_), size_,
-               [](T p, T q) { return p + q; });
+    update_kernel(aligned(data_), aligned(other.data_), size_, [](T p, T q) { return p + q; });
     return *this;
 }
 
@@ -243,8 +158,7 @@ Vec<T>& Vec<T>::operator-=(const Vec& other) {
         for (std::size_t i = 0; i < size_; ++i) data_[i] -= data_[i];
         return *this;
     }
-    zip_kernel(aligned(data_), aligned(data_), aligned(other.data_), size_,
-               [](T p, T q) { return p - q; });
+    update_kernel(aligned(data_), aligned(other.data_), size_, [](T p, T q) { return p - q; });
     return *this;
 }
 
@@ -256,8 +170,6 @@ Vec<T>& Vec<T>::operator*=(T alpha) noexcept {
 
 template <typename T>
 Vec<T>& Vec<T>::operator/=(T alpha) noexcept {
-    // Real division, not scale(1 / alpha): 1 / alpha is rounded once more, and
-    // for a tiny alpha (below about 1e-308) it overflows to infinity.
     T* YATRICES_RESTRICT p = aligned(data_);
     for (std::size_t i = 0; i < size_; ++i) p[i] /= alpha;
     return *this;
@@ -274,7 +186,7 @@ T Vec<T>::norm_inf() const noexcept {
     T best{0};
     for (std::size_t i = 0; i < size_; ++i) {
         const T a = std::fabs(data_[i]);
-        if (std::isnan(a)) return a;            // a comparison with NaN is always false
+        if (std::isnan(a)) return a;
         if (a > best) best = a;
     }
     return best;
@@ -283,17 +195,12 @@ T Vec<T>::norm_inf() const noexcept {
 template <typename T>
 T Vec<T>::norm2() const noexcept {
     if (size_ == 0) return T{0};
-    // Fast path: ONE pass over the data. Overflow cannot hide in it, because the
-    // running sums only grow, so a finite final sum means no step was infinite.
-    // Underflow (squares of tiny numbers rounding to 0) is caught by the lower bound.
     const T sumsq = sum_map_kernel(aligned(data_), size_, [](T v) { return v * v; });
     constexpr T lowest_safe = std::numeric_limits<T>::min() / std::numeric_limits<T>::epsilon();
     if (std::isfinite(sumsq) && sumsq >= lowest_safe) return std::sqrt(sumsq);
 
-    // Slow path (huge, tiny, infinite or NaN values): two passes, rescaled.
-    // ||x|| = m * sqrt(sum (x_i / m)^2) with m = max |x_i|, so every x_i / m is in [-1, 1].
     const T m = norm_inf();
-    if (m == T{0} || !std::isfinite(m)) return m;   // zeros, infinity or NaN
+    if (m == T{0} || !std::isfinite(m)) return m;
     T total{0};
     for (std::size_t i = 0; i < size_; ++i) {
         const T r = data_[i] / m;
@@ -383,7 +290,7 @@ Vec<T> operator/(const Vec<T>& a, non_deduced_t<T> alpha) {
 template <typename T>
 Vec<T> hadamard(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != y.size()) throw_size_mismatch("hadamard", x.size(), y.size());
-    Vec<T> out(x.size(), uninitialised);        // every element is written below
+    Vec<T> out(x.size(), uninitialised);
     if (!x.empty()) {
         zip_kernel(aligned(out.data()), aligned(x.data()), aligned(y.data()), x.size(),
                    [](T p, T q) { return p * q; });
@@ -406,8 +313,6 @@ T angle(const Vec<T>& x, const Vec<T>& y) {
     const T nx = x.norm2();
     const T ny = y.norm2();
     if (nx == T{0} || ny == T{0}) throw ZeroVectorError("angle");
-    // Rounding can push the cosine just past 1 (1.0000000000000002), and
-    // acos of that is NaN, so clamp it back into [-1, 1].
     const T c = std::clamp(x.dot(y) / (nx * ny), T{-1}, T{1});
     return std::acos(c);
 }
@@ -418,7 +323,7 @@ Vec<T> project(const Vec<T>& v, const Vec<T>& onto) {
     const T uu = onto.dot(onto);
     if (uu == T{0}) throw ZeroVectorError("project");
     const T factor = onto.dot(v) / uu;
-    Vec<T> out(onto.size(), uninitialised);     // one pass, no copy-then-scale
+    Vec<T> out(onto.size(), uninitialised);
     map_kernel(aligned(out.data()), aligned(onto.data()), onto.size(),
                [factor](T p) { return p * factor; });
     return out;
@@ -460,6 +365,179 @@ std::ostream& operator<<(std::ostream& os, const Vec<T>& v) {
     return os << to_string(v);
 }
 
+template <typename T>
+Vec<T> Vec<T>::ones(std::size_t n) {
+    return Vec(n, T{1});
+}
+
+template <typename T>
+Vec<T> Vec<T>::unit(std::size_t n, std::size_t k) {
+    if (k >= n) throw IndexError("Vec::unit", k, n);
+    Vec e(n);
+    e.data_[k] = T{1};
+    return e;
+}
+
+template <typename T>
+Vec<T> Vec<T>::linspace(T a, T b, std::size_t n) {
+    Vec out(n, uninitialised);
+    if (n == 0) return out;
+    if (n == 1) {
+        out.data_[0] = a;
+        return out;
+    }
+    const T step = (b - a) / static_cast<T>(n - 1);
+    for (std::size_t i = 0; i + 1 < n; ++i) out.data_[i] = a + static_cast<T>(i) * step;
+    out.data_[n - 1] = b;
+    return out;
+}
+
+template <typename T>
+std::size_t Vec<T>::argmin() const {
+    if (size_ == 0) throw EmptyVectorError("Vec::argmin");
+    std::size_t best = 0;
+    for (std::size_t i = 0; i < size_; ++i) {
+        if (std::isnan(data_[i])) return i;
+        if (data_[i] < data_[best]) best = i;
+    }
+    return best;
+}
+
+template <typename T>
+std::size_t Vec<T>::argmax() const {
+    if (size_ == 0) throw EmptyVectorError("Vec::argmax");
+    std::size_t best = 0;
+    for (std::size_t i = 0; i < size_; ++i) {
+        if (std::isnan(data_[i])) return i;
+        if (data_[i] > data_[best]) best = i;
+    }
+    return best;
+}
+
+template <typename T>
+T Vec<T>::prod() const noexcept {
+    T p{1};
+    for (std::size_t i = 0; i < size_; ++i) p *= data_[i];
+    return p;
+}
+
+template <typename T>
+T Vec<T>::variance(bool sample) const {
+    if (size_ == 0) throw EmptyVectorError("Vec::variance");
+    if (sample && size_ < 2) throw WrongSizeError("Vec::variance (sample)", size_, 2);
+    const T m = mean();
+    const T ss = sum_map_kernel(aligned(data_), size_, [m](T v) { return (v - m) * (v - m); });
+    return ss / static_cast<T>(sample ? size_ - 1 : size_);
+}
+
+template <typename T>
+T Vec<T>::stddev(bool sample) const {
+    return std::sqrt(variance(sample));
+}
+
+template <typename T>
+void Vec<T>::normalise() {
+    const T n = norm2();
+    if (n == T{0}) throw ZeroVectorError("Vec::normalise");
+    *this /= n;
+}
+
+template <typename T>
+Vec<T> Vec<T>::normalised() const {
+    const T n = norm2();
+    if (n == T{0}) throw ZeroVectorError("Vec::normalised");
+    return *this / n;
+}
+
+template <typename T>
+std::size_t Vec<T>::count_nonzero(T tol) const noexcept {
+    std::size_t c = 0;
+    for (std::size_t i = 0; i < size_; ++i) c += (std::fabs(data_[i]) > tol) ? 1 : 0;
+    return c;
+}
+
+template <typename T>
+bool Vec<T>::has_nan() const noexcept {
+    for (std::size_t i = 0; i < size_; ++i) {
+        if (std::isnan(data_[i])) return true;
+    }
+    return false;
+}
+
+template <typename T>
+Vec<T> lincomb(non_deduced_t<T> alpha, const Vec<T>& u, non_deduced_t<T> beta,
+               const Vec<T>& v) {
+    if (u.size() != v.size()) throw_size_mismatch("lincomb", u.size(), v.size());
+    Vec<T> out(u.size(), uninitialised);
+    if (!u.empty()) {
+        zip_kernel(aligned(out.data()), aligned(u.data()), aligned(v.data()), u.size(),
+                   [alpha, beta](T p, T q) { return alpha * p + beta * q; });
+    }
+    return out;
+}
+
+template <typename T>
+Vec<T> lerp(const Vec<T>& u, const Vec<T>& v, non_deduced_t<T> t) {
+    if (u.size() != v.size()) throw_size_mismatch("lerp", u.size(), v.size());
+    return lincomb(T{1} - t, u, t, v);
+}
+
+template <typename T>
+T distance(const Vec<T>& x, const Vec<T>& y) {
+    if (x.size() != y.size()) throw_size_mismatch("distance", x.size(), y.size());
+    if (x.empty()) return T{0};
+    const T ss = sum_zip_kernel(aligned(x.data()), aligned(y.data()), x.size(),
+                                [](T p, T q) { return (p - q) * (p - q); });
+    constexpr T lowest_safe =
+        std::numeric_limits<T>::min() / std::numeric_limits<T>::epsilon();
+    if (std::isfinite(ss) && ss >= lowest_safe) return std::sqrt(ss);
+    if (ss == T{0} && distance_inf(x, y) == T{0}) return T{0};
+    return (x - y).norm2();
+}
+
+template <typename T>
+T distance1(const Vec<T>& x, const Vec<T>& y) {
+    if (x.size() != y.size()) throw_size_mismatch("distance1", x.size(), y.size());
+    if (x.empty()) return T{0};
+    return sum_zip_kernel(aligned(x.data()), aligned(y.data()), x.size(),
+                          [](T p, T q) { return std::fabs(p - q); });
+}
+
+template <typename T>
+T distance_inf(const Vec<T>& x, const Vec<T>& y) {
+    if (x.size() != y.size()) throw_size_mismatch("distance_inf", x.size(), y.size());
+    T best{0};
+    for (std::size_t i = 0; i < x.size(); ++i) {
+        const T d = std::fabs(x[i] - y[i]);
+        if (std::isnan(d)) return d;
+        if (d > best) best = d;
+    }
+    return best;
+}
+
+template <typename T>
+T cosine_similarity(const Vec<T>& u, const Vec<T>& v) {
+    if (u.size() != v.size()) throw_size_mismatch("cosine_similarity", u.size(), v.size());
+    const T nu = u.norm2();
+    const T nv = v.norm2();
+    if (nu == T{0} || nv == T{0}) throw ZeroVectorError("cosine_similarity");
+    return std::clamp(u.dot(v) / (nu * nv), T{-1}, T{1});
+}
+
+template <typename T>
+bool operator==(const Vec<T>& x, const Vec<T>& y) noexcept {
+    if (x.size() != y.size()) return false;
+    for (std::size_t i = 0; i < x.size(); ++i) {
+        if (x[i] != y[i]) return false;
+    }
+    return true;
+}
+
+template <typename T>
+bool operator!=(const Vec<T>& x, const Vec<T>& y) noexcept {
+    return !(x == y);
+}
+
 template class Vec<float>;
 template class Vec<double>;
 template Vec<float> operator+<float>(const Vec<float>&, const Vec<float>&);
@@ -489,4 +567,21 @@ template std::string to_string<double>(const Vec<double>&, int);
 template std::ostream& operator<< <float>(std::ostream&, const Vec<float>&);
 template std::ostream& operator<< <double>(std::ostream&, const Vec<double>&);
 
-}  // namespace yatrices
+template Vec<float> lincomb<float>(float, const Vec<float>&, float, const Vec<float>&);
+template Vec<float> lerp<float>(const Vec<float>&, const Vec<float>&, float);
+template float distance<float>(const Vec<float>&, const Vec<float>&);
+template float distance1<float>(const Vec<float>&, const Vec<float>&);
+template float distance_inf<float>(const Vec<float>&, const Vec<float>&);
+template float cosine_similarity<float>(const Vec<float>&, const Vec<float>&);
+template bool operator==<float>(const Vec<float>&, const Vec<float>&) noexcept;
+template bool operator!=<float>(const Vec<float>&, const Vec<float>&) noexcept;
+template Vec<double> lincomb<double>(double, const Vec<double>&, double, const Vec<double>&);
+template Vec<double> lerp<double>(const Vec<double>&, const Vec<double>&, double);
+template double distance<double>(const Vec<double>&, const Vec<double>&);
+template double distance1<double>(const Vec<double>&, const Vec<double>&);
+template double distance_inf<double>(const Vec<double>&, const Vec<double>&);
+template double cosine_similarity<double>(const Vec<double>&, const Vec<double>&);
+template bool operator==<double>(const Vec<double>&, const Vec<double>&) noexcept;
+template bool operator!=<double>(const Vec<double>&, const Vec<double>&) noexcept;
+
+}
