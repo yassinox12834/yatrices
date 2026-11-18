@@ -1,4 +1,4 @@
-# Language statistics on GitHub: only C++, C and CMake are counted.
+# Language statistics on GitHub: only C++, C, CMake and Python are counted.
 
 # 1. Hide everything from the statistics by default...
 * linguist-detectable=false
@@ -9,3 +9,4 @@
 *.h             linguist-language=C      linguist-detectable=true
 CMakeLists.txt  linguist-language=CMake  linguist-detectable=true
 *.cmake         linguist-language=CMake  linguist-detectable=true
+*.py            linguist-language=Python linguist-detectable=true
