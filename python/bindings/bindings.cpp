@@ -1,9 +1,6 @@
-// Python bindings for YatricesEngine, built with pybind11.
-// Nothing here does maths: each Python call forwards to the engine.
-
 #include <pybind11/operators.h>
 #include <pybind11/pybind11.h>
-#include <pybind11/stl.h>  // converts Python lists to and from std::vector
+#include <pybind11/stl.h>
 
 #include <cstddef>
 #include <string>
@@ -16,11 +13,6 @@ namespace py = pybind11;
 using yatrices::Vec;
 
 namespace {
-
-// Each C++ error becomes a Python class that inherits from TWO parents:
-//   * yatricespy.YatricesError, so `except yt.YatricesError` catches them all;
-//   * the matching built-in error, so `except IndexError` or `except ValueError`
-//     still works for people who have never heard of Yatrices.
 
 PyObject* E_base = nullptr;
 PyObject* E_index = nullptr;
@@ -37,8 +29,8 @@ PyObject* make_error(py::module_& m, const char* name, const char* doc, PyObject
                                : py::reinterpret_borrow<py::object>(PyExc_Exception);
     PyObject* cls = PyErr_NewExceptionWithDoc(qualified.c_str(), doc, bases.ptr(), nullptr);
     if (cls == nullptr) throw py::error_already_set();
-    m.add_object(name, py::handle(cls));  // the module keeps its own reference
-    return cls;                           // we keep ours for the whole session
+    m.add_object(name, py::handle(cls));
+    return cls;
 }
 
 void bind_errors(py::module_& m) {
@@ -61,9 +53,6 @@ void bind_errors(py::module_& m) {
     E_memory = make_error(m, "OutOfMemoryError", "The computer ran out of memory.",
                           PyExc_MemoryError);
 
-    // When a C++ error escapes, pybind11 calls this function with it. The first
-    // `catch` that matches decides which Python error is raised. Anything that
-    // matches none of them is passed on to pybind11's own translators.
     py::register_exception_translator([](std::exception_ptr p) {
         try {
             if (p) std::rethrow_exception(p);
@@ -85,9 +74,6 @@ void bind_errors(py::module_& m) {
     });
 }
 
-// Python allows v[-1] for the last element; the engine does not, so the
-// conversion happens here. Out-of-range indices raise yatricespy.IndexError
-// with the same message style as the engine.
 std::size_t python_index(py::ssize_t i, std::size_t size) {
     const py::ssize_t n = static_cast<py::ssize_t>(size);
     const py::ssize_t j = i < 0 ? i + n : i;
@@ -105,7 +91,6 @@ std::size_t python_index(py::ssize_t i, std::size_t size) {
     return static_cast<std::size_t>(j);
 }
 
-// Vec<T> is bound once, for both float and double.
 template <typename T>
 void bind_vec(py::module_& m, const char* name, const char* dtype) {
     using V = Vec<T>;
@@ -118,7 +103,7 @@ void bind_vec(py::module_& m, const char* name, const char* dtype) {
         .def(py::init<std::size_t>(), py::arg("n"), "n zeros.")
         .def(py::init<std::size_t, T>(), py::arg("n"), py::arg("value"), "n copies of value.")
         .def(py::init([](const std::vector<T>& values) {
-                 V v(values.size(), yatrices::uninitialised);  // every slot is written below
+                 V v(values.size(), yatrices::uninitialised);
                  for (std::size_t i = 0; i < values.size(); ++i) v[i] = values[i];
                  return v;
              }),
@@ -133,7 +118,7 @@ void bind_vec(py::module_& m, const char* name, const char* dtype) {
              [](V& v, py::ssize_t i, T value) { v[python_index(i, v.size())] = value; })
         .def("__iter__",
              [](const V& v) { return py::make_iterator(v.begin(), v.end()); },
-             py::keep_alive<0, 1>())  // the vector lives as long as its iterator
+             py::keep_alive<0, 1>())
         .def("tolist", [](const V& v) { return std::vector<T>(v.begin(), v.end()); },
              "A plain Python list with the same values.")
         .def("copy", [](const V& v) { return V(v); }, "An independent copy.")
@@ -148,7 +133,7 @@ void bind_vec(py::module_& m, const char* name, const char* dtype) {
         .def("axpy", &V::axpy, py::arg("alpha"), py::arg("x"), "self += alpha * x.")
 
         .def("dot", &V::dot, py::arg("other"), "Dot product: sum of self[i] * other[i].")
-        .def("__matmul__", &V::dot, py::is_operator())  // x @ y, like NumPy
+        .def("__matmul__", &V::dot, py::is_operator())
         .def("norm1", &V::norm1, "Sum of absolute values.")
         .def("norm2", &V::norm2, "Euclidean length, safe against overflow.")
         .def("norm_inf", &V::norm_inf, "Largest absolute value.")
@@ -158,7 +143,6 @@ void bind_vec(py::module_& m, const char* name, const char* dtype) {
         .def("max", &V::max, "Largest element. Raises EmptyVectorError if empty.")
         .def("all_finite", &V::all_finite, "False if any element is NaN or infinite.")
 
-        // arithmetic: every operator returns a new vector, except the in-place ones
         .def("__add__", [](const V& a, const V& b) { return a + b; }, py::is_operator())
         .def("__sub__", [](const V& a, const V& b) { return a - b; }, py::is_operator())
         .def("__neg__", [](const V& a) { return -a; })
@@ -176,7 +160,6 @@ void bind_vec(py::module_& m, const char* name, const char* dtype) {
         .def_static("default_tolerance", &yatrices::default_tolerance<T>,
                     "Tolerance used by allclose when none is given.");
 
-    // free functions; pybind11 picks the float or double version from the arguments
     m.def("hadamard", [](const V& x, const V& y) { return yatrices::hadamard(x, y); },
           py::arg("x"), py::arg("y"), "Element-wise product: x[i] * y[i].");
     m.def("cross", [](const V& x, const V& y) { return yatrices::cross(x, y); },
@@ -192,7 +175,7 @@ void bind_vec(py::module_& m, const char* name, const char* dtype) {
           "True when every pair of elements is approximately equal.");
 }
 
-}  // namespace
+}
 
 PYBIND11_MODULE(_yatricespy, m) {
     m.doc() = "yatricespy: Python front end of YatricesEngine";

@@ -5,10 +5,8 @@
 extern "C" {
 #endif
 
-/* TODO: plain C declarations only (double*, int, opaque pointers) */
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* YATRICES_CAPI_H */
+#endif
