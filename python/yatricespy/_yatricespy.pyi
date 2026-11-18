@@ -1,4 +1,3 @@
-# Keep this file in step with python/bindings/bindings.cpp.
 import builtins
 from collections.abc import Iterable, Iterator
 from typing import ClassVar, overload

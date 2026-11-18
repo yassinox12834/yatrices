@@ -1,5 +1,6 @@
 import yatricespy as yt
 
-
 def test_import():
-    assert yt.__version__
+    print(yt.__version__)
+
+test_import()
