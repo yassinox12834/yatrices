@@ -1,6 +1,16 @@
 # YatricesEngine (C++ library)
 
-The C++ core of Yatrices. Pure C++17, and it knows nothing about Python.
+The C++ core of Yatrices. Pure C++20, and it knows nothing about Python.
+
+## Language standard
+
+Since 0.0.3 the engine needs C++20 (GCC 10, Clang 15 or Visual Studio 2019 16.10, or newer). It uses:
+
+- the `Scalar` concept, which restricts `Vec<T>`, `Matrix<T>` and every function taking them to `float` and `double`; using `Vec<int>` now fails with a short "constraints not satisfied" message;
+- `std::invocable` on `apply`, `std::floating_point` on `default_tolerance` and `approx_equal`;
+- `std::type_identity_t` for `non_deduced_t`, which is kept as an alias;
+- rewritten comparisons: only `operator==` is written, and the compiler derives `!=` from it;
+- `std::assume_aligned`, so the 64-byte alignment hint now reaches MSVC as well as GCC and Clang.
 
 ## Building
 
@@ -66,7 +76,7 @@ target_link_libraries(your_program PRIVATE Yatrices::Engine)
 For a quick test without CMake, compile the engine's `.cpp` files along with your own:
 
 ```bash
-g++ -std=c++17 -O2 -Icpp/include my_program.cpp cpp/src/vector.cpp cpp/src/errors.cpp -o my_program
+g++ -std=c++20 -O2 -Icpp/include my_program.cpp cpp/src/vector.cpp cpp/src/errors.cpp -o my_program
 ```
 
 ## Everything available

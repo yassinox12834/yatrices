@@ -4,6 +4,7 @@
 
 #include <cstddef>
 #include <limits>
+#include <memory>
 #include <new>
 
 #if defined(__GNUC__) || defined(__clang__)
@@ -22,11 +23,7 @@ inline constexpr std::align_val_t kAlign{kAlignment};
 
 template <typename T>
 inline T* aligned(T* p) noexcept {
-#if defined(__GNUC__) || defined(__clang__)
-    return static_cast<T*>(__builtin_assume_aligned(p, kAlignment));
-#else
-    return p;
-#endif
+    return std::assume_aligned<kAlignment>(p);
 }
 
 template <typename T>

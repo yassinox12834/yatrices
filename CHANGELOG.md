@@ -6,6 +6,31 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.0.3] - 2026-11-20
+
+The whole project moves from C++17 to C++20. The public API is unchanged: code that compiled against 0.0.2 compiles against 0.0.3 with a C++20 compiler.
+
+### Changed
+
+**YatricesEngine (C++20)**
+- The required standard is now C++20, in `CMakeLists.txt` (`CMAKE_CXX_STANDARD 20`) and in `cpp/CMakeLists.txt` (`cxx_std_20`, which propagates to anything that links against the engine). Supported compilers: GCC 10, Clang 15 and Visual Studio 2019 16.10, or newer.
+- A new concept, `Scalar`, replaces the `static_assert` inside `Vec` and `Matrix`. Every class template and free function that takes a `Vec<T>` or a `Matrix<T>` is now written `template <Scalar T>`, so `Vec<int>` is rejected at the point of use with "constraints not satisfied" instead of an error from deep inside the class.
+- `apply` is constrained with `std::invocable<T>`; `default_tolerance` with `std::floating_point`; `approx_equal` with a `requires` clause in place of its `static_assert`.
+- `non_deduced_t<T>` is now an alias for the standard `std::type_identity_t<T>`; the hand-written `non_deduced` struct is gone.
+- The alignment hint in `cpp/src/internal.hpp` uses the portable `std::assume_aligned<64>` rather than the GCC/Clang built-in, so MSVC now receives it too.
+- The version number is now 0.0.3 in `CMakeLists.txt`, `pyproject.toml` and `yatricespy.__version__`.
+
+**Project**
+- The READMEs, the badge, the SVG banners, the VS Code build task and the lessons (`run_lessons.py`, `README.txt`) now say C++20 and pass `-std=c++20` or `/std:c++20`.
+- `cpp/README.md` gains a "Language standard" section listing the C++20 features the engine uses.
+
+### Removed
+- `operator!=` for `Vec`. C++20 rewrites `a != b` as `!(a == b)` automatically, so `!=` keeps working in C++ and in Python.
+
+### Notes
+- Verified on Linux (g++ 11.4, Python 3.10): 230 C++ checks, the three examples and the 25 Python tests pass; the `should_fail` lessons still fail to compile as intended.
+- The PNG banners in `assets/github/images/` still read C++17; they must be re-exported from the updated SVGs.
+
 ## [0.0.2] - 2026-11-18
 
 Matrices arrive in the C++ engine, the C++ tests become real, and the source code loses its comments. Python bindings for `Matrix` come in a later release.
@@ -93,6 +118,7 @@ The first release. It provides a vector type in C++, which is also available fro
 ### Notes
 - Verified on Windows (MSYS2 g++, Python 3.14) and on Linux (g++, Python 3.13).
 
-[Unreleased]: https://github.com/yassinox12834/yatrices/compare/v0.0.2...HEAD
+[Unreleased]: https://github.com/yassinox12834/yatrices/compare/v0.0.3...HEAD
+[0.0.3]: https://github.com/yassinox12834/yatrices/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/yassinox12834/yatrices/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/yassinox12834/yatrices/releases/tag/v0.0.1

@@ -27,7 +27,7 @@ using detail::zip_kernel;
 
 constexpr std::size_t kTile = 32;
 
-template <typename T>
+template <Scalar T>
 void check_same_shape(const char* who, const Matrix<T>& a, const Matrix<T>& b) {
     if (a.rows() != b.rows() || a.cols() != b.cols()) {
         throw ShapeMismatchError(who, a.rows(), a.cols(), b.rows(), b.cols(),
@@ -53,25 +53,25 @@ DiagonalSpan diagonal_span(std::size_t m, std::size_t n, std::ptrdiff_t k) noexc
 
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::Matrix(std::size_t rows, std::size_t cols)
     : data_(allocate<T>(checked_count<T>(rows, cols))), rows_(rows), cols_(cols) {
     if (size() != 0) std::memset(data_, 0, size() * sizeof(T));
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::Matrix(std::size_t rows, std::size_t cols, T value)
     : data_(allocate<T>(checked_count<T>(rows, cols))), rows_(rows), cols_(cols) {
     std::fill(data_, data_ + size(), value);
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::Matrix(std::size_t rows, std::size_t cols, UninitialisedTag)
     : data_(allocate<T>(checked_count<T>(rows, cols))), rows_(rows), cols_(cols) {}
 
 namespace {
 
-template <typename T>
+template <Scalar T>
 std::size_t checked_cols(std::initializer_list<std::initializer_list<T>> rows) {
     if (rows.size() == 0) return 0;
     const std::size_t n = rows.begin()->size();
@@ -85,26 +85,26 @@ std::size_t checked_cols(std::initializer_list<std::initializer_list<T>> rows) {
 
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::Matrix(std::initializer_list<std::initializer_list<T>> rows)
     : Matrix(rows.size(), checked_cols(rows), uninitialised) {
     T* out = data_;
     for (const auto& r : rows) out = std::copy(r.begin(), r.end(), out);
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::Matrix(const Matrix& other)
     : data_(allocate<T>(other.size())), rows_(other.rows_), cols_(other.cols_) {
     if (size() != 0) std::memcpy(data_, other.data_, size() * sizeof(T));
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::Matrix(Matrix&& other) noexcept
     : data_(std::exchange(other.data_, nullptr)),
       rows_(std::exchange(other.rows_, 0)),
       cols_(std::exchange(other.cols_, 0)) {}
 
-template <typename T>
+template <Scalar T>
 Matrix<T>& Matrix<T>::operator=(const Matrix& other) {
     if (this == &other) return *this;
     if (size() == other.size()) {
@@ -118,7 +118,7 @@ Matrix<T>& Matrix<T>::operator=(const Matrix& other) {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>& Matrix<T>::operator=(Matrix&& other) noexcept {
     if (this != &other) {
         release(data_);
@@ -129,19 +129,19 @@ Matrix<T>& Matrix<T>::operator=(Matrix&& other) noexcept {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>::~Matrix() {
     release(data_);
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::swap(Matrix& other) noexcept {
     std::swap(data_, other.data_);
     std::swap(rows_, other.rows_);
     std::swap(cols_, other.cols_);
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::reshape(std::size_t m, std::size_t n) {
     if (checked_count<T>(m, n) != size()) {
         throw ShapeMismatchError("Matrix::reshape", rows_, cols_, m, n,
@@ -151,40 +151,40 @@ void Matrix<T>::reshape(std::size_t m, std::size_t n) {
     cols_ = n;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Matrix<T>::flatten() const {
     Vec<T> v(size(), uninitialised);
     if (size() != 0) std::memcpy(v.data(), data_, size() * sizeof(T));
     return v;
 }
 
-template <typename T>
+template <Scalar T>
 T& Matrix<T>::at(std::size_t i, std::size_t j) {
     if (i >= rows_) throw IndexError("Matrix::at", "row", i, rows_);
     if (j >= cols_) throw IndexError("Matrix::at", "column", j, cols_);
     return data_[i * cols_ + j];
 }
 
-template <typename T>
+template <Scalar T>
 const T& Matrix<T>::at(std::size_t i, std::size_t j) const {
     if (i >= rows_) throw IndexError("Matrix::at", "row", i, rows_);
     if (j >= cols_) throw IndexError("Matrix::at", "column", j, cols_);
     return data_[i * cols_ + j];
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::fill(T value) noexcept {
     if (size() != 0) std::fill(aligned(data_), aligned(data_) + size(), value);
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::scale(T alpha) noexcept {
     T* YATRICES_RESTRICT p = aligned(data_);
     const std::size_t n = size();
     for (std::size_t k = 0; k < n; ++k) p[k] *= alpha;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>& Matrix<T>::operator+=(const Matrix& other) {
     check_same_shape("Matrix::operator+=", *this, other);
     if (empty()) return *this;
@@ -196,7 +196,7 @@ Matrix<T>& Matrix<T>::operator+=(const Matrix& other) {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>& Matrix<T>::operator-=(const Matrix& other) {
     check_same_shape("Matrix::operator-=", *this, other);
     if (empty()) return *this;
@@ -208,13 +208,13 @@ Matrix<T>& Matrix<T>::operator-=(const Matrix& other) {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>& Matrix<T>::operator*=(T alpha) noexcept {
     scale(alpha);
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T>& Matrix<T>::operator/=(T alpha) noexcept {
     T* YATRICES_RESTRICT p = aligned(data_);
     const std::size_t n = size();
@@ -222,7 +222,7 @@ Matrix<T>& Matrix<T>::operator/=(T alpha) noexcept {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> Matrix<T>::transposed() const {
     Matrix out(cols_, rows_, uninitialised);
     const T* YATRICES_RESTRICT a = data_;
@@ -241,7 +241,7 @@ Matrix<T> Matrix<T>::transposed() const {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::transpose_in_place() {
     if (!is_square()) throw NotSquareError("Matrix::transpose_in_place", rows_, cols_);
     const std::size_t n = rows_;
@@ -259,7 +259,7 @@ void Matrix<T>::transpose_in_place() {
     }
 }
 
-template <typename T>
+template <Scalar T>
 T Matrix<T>::trace() const {
     if (!is_square()) throw NotSquareError("Matrix::trace", rows_, cols_);
     T t{0};
@@ -267,7 +267,7 @@ T Matrix<T>::trace() const {
     return t;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Matrix<T>::diagonal(std::ptrdiff_t k) const {
     const DiagonalSpan s = diagonal_span(rows_, cols_, k);
     Vec<T> d(s.length, uninitialised);
@@ -275,26 +275,26 @@ Vec<T> Matrix<T>::diagonal(std::ptrdiff_t k) const {
     return d;
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::set_diagonal(const Vec<T>& d, std::ptrdiff_t k) {
     const DiagonalSpan s = diagonal_span(rows_, cols_, k);
     if (d.size() != s.length) throw WrongSizeError("Matrix::set_diagonal", d.size(), s.length);
     for (std::size_t t = 0; t < s.length; ++t) data_[s.start + t * (cols_ + 1)] = d[t];
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::swap_rows(std::size_t i, std::size_t j) noexcept {
     if (i == j) return;
     std::swap_ranges(row_data(i), row_data(i) + cols_, row_data(j));
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::scale_row(std::size_t i, T alpha) noexcept {
     T* YATRICES_RESTRICT r = row_data(i);
     for (std::size_t j = 0; j < cols_; ++j) r[j] *= alpha;
 }
 
-template <typename T>
+template <Scalar T>
 void Matrix<T>::add_row_multiple(std::size_t target, std::size_t source, T alpha) noexcept {
     if (target == source) {
         scale_row(target, T{1} + alpha);
@@ -303,31 +303,31 @@ void Matrix<T>::add_row_multiple(std::size_t target, std::size_t source, T alpha
     detail::axpy_kernel(row_data(target), row_data(source), alpha, cols_);
 }
 
-template <typename T>
+template <Scalar T>
 T Matrix<T>::sum() const noexcept {
     if (size() == 0) return T{0};
     return sum_map_kernel(aligned(data_), size(), [](T v) { return v; });
 }
 
-template <typename T>
+template <Scalar T>
 T Matrix<T>::mean() const {
     if (size() == 0) throw EmptyMatrixError("Matrix::mean");
     return sum() / static_cast<T>(size());
 }
 
-template <typename T>
+template <Scalar T>
 T Matrix<T>::min() const {
     if (size() == 0) throw EmptyMatrixError("Matrix::min");
     return *std::min_element(data_, data_ + size());
 }
 
-template <typename T>
+template <Scalar T>
 T Matrix<T>::max() const {
     if (size() == 0) throw EmptyMatrixError("Matrix::max");
     return *std::max_element(data_, data_ + size());
 }
 
-template <typename T>
+template <Scalar T>
 T Matrix<T>::max_abs() const {
     if (size() == 0) throw EmptyMatrixError("Matrix::max_abs");
     T best{0};
@@ -339,7 +339,7 @@ T Matrix<T>::max_abs() const {
     return best;
 }
 
-template <typename T>
+template <Scalar T>
 bool Matrix<T>::all_finite() const noexcept {
     for (std::size_t k = 0; k < size(); ++k) {
         if (!std::isfinite(data_[k])) return false;
@@ -347,7 +347,7 @@ bool Matrix<T>::all_finite() const noexcept {
     return true;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Matrix<T>::sum_rows() const {
     Vec<T> out(rows_, uninitialised);
     for (std::size_t i = 0; i < rows_; ++i) {
@@ -356,7 +356,7 @@ Vec<T> Matrix<T>::sum_rows() const {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Matrix<T>::sum_cols() const {
     Vec<T> out(cols_);
     for (std::size_t i = 0; i < rows_; ++i) {
@@ -365,7 +365,7 @@ Vec<T> Matrix<T>::sum_cols() const {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Matrix<T>::mean_rows() const {
     if (cols_ == 0) throw EmptyMatrixError("Matrix::mean_rows");
     Vec<T> out = sum_rows();
@@ -373,7 +373,7 @@ Vec<T> Matrix<T>::mean_rows() const {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Matrix<T>::mean_cols() const {
     if (rows_ == 0) throw EmptyMatrixError("Matrix::mean_cols");
     Vec<T> out = sum_cols();
@@ -381,7 +381,7 @@ Vec<T> Matrix<T>::mean_cols() const {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b) {
     check_same_shape("operator+", a, b);
     Matrix<T> out(a.rows(), a.cols(), uninitialised);
@@ -392,7 +392,7 @@ Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b) {
     check_same_shape("operator-", a, b);
     Matrix<T> out(a.rows(), a.cols(), uninitialised);
@@ -403,7 +403,7 @@ Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> operator-(const Matrix<T>& a) {
     Matrix<T> out(a.rows(), a.cols(), uninitialised);
     if (!a.empty()) {
@@ -412,7 +412,7 @@ Matrix<T> operator-(const Matrix<T>& a) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> operator*(const Matrix<T>& a, non_deduced_t<T> alpha) {
     Matrix<T> out(a.rows(), a.cols(), uninitialised);
     if (!a.empty()) {
@@ -422,10 +422,10 @@ Matrix<T> operator*(const Matrix<T>& a, non_deduced_t<T> alpha) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> operator*(non_deduced_t<T> alpha, const Matrix<T>& a) { return a * alpha; }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> operator/(const Matrix<T>& a, non_deduced_t<T> alpha) {
     Matrix<T> out(a.rows(), a.cols(), uninitialised);
     if (!a.empty()) {
@@ -435,7 +435,7 @@ Matrix<T> operator/(const Matrix<T>& a, non_deduced_t<T> alpha) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Matrix<T> hadamard(const Matrix<T>& A, const Matrix<T>& B) {
     check_same_shape("hadamard", A, B);
     Matrix<T> out(A.rows(), A.cols(), uninitialised);
@@ -446,7 +446,7 @@ Matrix<T> hadamard(const Matrix<T>& A, const Matrix<T>& B) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 void add_to_rows(Matrix<T>& A, const Vec<T>& v) {
     if (v.size() != A.cols()) throw SizeMismatchError("add_to_rows", A.cols(), v.size());
     for (std::size_t i = 0; i < A.rows(); ++i) {
@@ -454,7 +454,7 @@ void add_to_rows(Matrix<T>& A, const Vec<T>& v) {
     }
 }
 
-template <typename T>
+template <Scalar T>
 void subtract_from_rows(Matrix<T>& A, const Vec<T>& v) {
     if (v.size() != A.cols()) throw SizeMismatchError("subtract_from_rows", A.cols(), v.size());
     for (std::size_t i = 0; i < A.rows(); ++i) {
@@ -462,7 +462,7 @@ void subtract_from_rows(Matrix<T>& A, const Vec<T>& v) {
     }
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> centre_columns(Matrix<T>& A) {
     if (A.rows() == 0) throw EmptyMatrixError("centre_columns");
     Vec<T> means = A.mean_cols();
@@ -470,7 +470,7 @@ Vec<T> centre_columns(Matrix<T>& A) {
     return means;
 }
 
-template <typename T>
+template <Scalar T>
 bool allclose(const Matrix<T>& A, const Matrix<T>& B, non_deduced_t<T> rtol,
               non_deduced_t<T> atol) noexcept {
     if (A.rows() != B.rows() || A.cols() != B.cols()) return false;
@@ -482,7 +482,7 @@ bool allclose(const Matrix<T>& A, const Matrix<T>& B, non_deduced_t<T> rtol,
     return true;
 }
 
-template <typename T>
+template <Scalar T>
 std::string to_string(const Matrix<T>& A, int digits) {
     if (digits < 1) digits = 1;
     if (A.rows() == 0) return "[]";
@@ -511,7 +511,7 @@ std::string to_string(const Matrix<T>& A, int digits) {
     return out + "]";
 }
 
-template <typename T>
+template <Scalar T>
 std::ostream& operator<<(std::ostream& os, const Matrix<T>& A) {
     return os << to_string(A);
 }

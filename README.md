@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/github/images/banner-yatrices.png" alt="Yatrices: linear algebra in C++17 with a Python front end" width="100%">
+  <img src="assets/github/images/banner-yatrices.png" alt="Yatrices: linear algebra in C++20 with a Python front end" width="100%">
 </p>
 
 <p align="center">
   <a href="https://github.com/yassinox12834/yatrices/releases/latest"><img alt="latest release" src="https://img.shields.io/github/v/release/yassinox12834/yatrices?color=0aa5a5"></a>
-  <img alt="C++17" src="https://img.shields.io/badge/C%2B%2B-17-0b6e8a">
+  <img alt="C++20" src="https://img.shields.io/badge/C%2B%2B-20-0b6e8a">
   <img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-14a86b">
   <img alt="status" src="https://img.shields.io/badge/status-early%20days-lightgrey">
 </p>
@@ -31,7 +31,7 @@ So it's a learning project above all. I'd much rather understand a hundred lines
 
 For the version number, rely on the [latest GitHub release](https://github.com/yassinox12834/yatrices/releases/latest). It is the reference; the badge above reads from it, and the files in this folder may be ahead of the last release.
 
-You'll need CMake 3.20 or later, a C++17 compiler and, for the Python side, Python 3.10 or later.
+You'll need CMake 3.20 or later, a C++20 compiler (GCC 10, Clang 15 or Visual Studio 2019 16.10, or anything newer) and, for the Python side, Python 3.10 or later.
 
 **Python** (pip compiles the engine for you, so a C++ compiler must be on your PATH; on Windows, MSYS2's g++ works):
 
@@ -95,7 +95,7 @@ You're very welcome, whatever your level. If you're learning this stuff too, eve
 
 - **Spotted a bug, or something unclear?** Open an issue. "I didn't follow this bit of the README" counts as a perfectly good issue.
 - **Got an idea?** Open an issue first and we can talk it through.
-- **Sending code?** Please stick to C++17, follow `.clang-format`, and check anything numerical against NumPy.
+- **Sending code?** Please stick to C++20, follow `.clang-format`, and check anything numerical against NumPy.
 
 One small thing: since I'm using this project to learn, I might occasionally ask to write a feature myself, even if you've already solved it. Please don't take it personally. Reviews and "have you thought about…?" comments are always appreciated.
 

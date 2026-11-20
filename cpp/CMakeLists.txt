@@ -8,7 +8,7 @@ add_library(Yatrices::Engine ALIAS YatricesEngine)
 target_include_directories(YatricesEngine PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
-target_compile_features(YatricesEngine PUBLIC cxx_std_17)
+target_compile_features(YatricesEngine PUBLIC cxx_std_20)
 set_target_properties(YatricesEngine PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 if(MSVC)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <cstddef>
 #include <initializer_list>
 #include <iosfwd>
@@ -12,11 +13,8 @@
 
 namespace yatrices {
 
-template <typename T>
+template <Scalar T>
 class Matrix {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
-                  "Matrix supports only float and double");
-
 public:
     using value_type = T;
     static constexpr std::size_t alignment = Vec<T>::alignment;
@@ -65,7 +63,7 @@ public:
     Matrix& operator*=(T alpha) noexcept;
     Matrix& operator/=(T alpha) noexcept;
 
-    template <typename F>
+    template <std::invocable<T> F>
     Matrix& apply(F f) {
         const std::size_t n = size();
         for (std::size_t k = 0; k < n; ++k) data_[k] = static_cast<T>(f(data_[k]));
@@ -102,38 +100,38 @@ private:
     std::size_t cols_ = 0;
 };
 
-template <typename T> [[nodiscard]] Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b);
-template <typename T> [[nodiscard]] Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b);
-template <typename T> [[nodiscard]] Matrix<T> operator-(const Matrix<T>& a);
-template <typename T> [[nodiscard]] Matrix<T> operator*(const Matrix<T>& a, non_deduced_t<T> alpha);
-template <typename T> [[nodiscard]] Matrix<T> operator*(non_deduced_t<T> alpha, const Matrix<T>& a);
-template <typename T> [[nodiscard]] Matrix<T> operator/(const Matrix<T>& a, non_deduced_t<T> alpha);
+template <Scalar T> [[nodiscard]] Matrix<T> operator+(const Matrix<T>& a, const Matrix<T>& b);
+template <Scalar T> [[nodiscard]] Matrix<T> operator-(const Matrix<T>& a, const Matrix<T>& b);
+template <Scalar T> [[nodiscard]] Matrix<T> operator-(const Matrix<T>& a);
+template <Scalar T> [[nodiscard]] Matrix<T> operator*(const Matrix<T>& a, non_deduced_t<T> alpha);
+template <Scalar T> [[nodiscard]] Matrix<T> operator*(non_deduced_t<T> alpha, const Matrix<T>& a);
+template <Scalar T> [[nodiscard]] Matrix<T> operator/(const Matrix<T>& a, non_deduced_t<T> alpha);
 
-template <typename T> [[nodiscard]] inline Matrix<T> operator+(Matrix<T>&& a, const Matrix<T>& b) { a += b;        return std::move(a); }
-template <typename T> [[nodiscard]] inline Matrix<T> operator-(Matrix<T>&& a, const Matrix<T>& b) { a -= b;        return std::move(a); }
-template <typename T> [[nodiscard]] inline Matrix<T> operator-(Matrix<T>&& a)                     { a.scale(T{-1}); return std::move(a); }
-template <typename T> [[nodiscard]] inline Matrix<T> operator*(Matrix<T>&& a, non_deduced_t<T> alpha) { a *= alpha; return std::move(a); }
-template <typename T> [[nodiscard]] inline Matrix<T> operator*(non_deduced_t<T> alpha, Matrix<T>&& a) { a *= alpha; return std::move(a); }
-template <typename T> [[nodiscard]] inline Matrix<T> operator/(Matrix<T>&& a, non_deduced_t<T> alpha) { a /= alpha; return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Matrix<T> operator+(Matrix<T>&& a, const Matrix<T>& b) { a += b;        return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Matrix<T> operator-(Matrix<T>&& a, const Matrix<T>& b) { a -= b;        return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Matrix<T> operator-(Matrix<T>&& a)                     { a.scale(T{-1}); return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Matrix<T> operator*(Matrix<T>&& a, non_deduced_t<T> alpha) { a *= alpha; return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Matrix<T> operator*(non_deduced_t<T> alpha, Matrix<T>&& a) { a *= alpha; return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Matrix<T> operator/(Matrix<T>&& a, non_deduced_t<T> alpha) { a /= alpha; return std::move(a); }
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] Matrix<T> hadamard(const Matrix<T>& A, const Matrix<T>& B);
 
-template <typename T> void add_to_rows(Matrix<T>& A, const Vec<T>& v);
-template <typename T> void subtract_from_rows(Matrix<T>& A, const Vec<T>& v);
+template <Scalar T> void add_to_rows(Matrix<T>& A, const Vec<T>& v);
+template <Scalar T> void subtract_from_rows(Matrix<T>& A, const Vec<T>& v);
 
-template <typename T> Vec<T> centre_columns(Matrix<T>& A);
+template <Scalar T> Vec<T> centre_columns(Matrix<T>& A);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] bool allclose(const Matrix<T>& A, const Matrix<T>& B,
                             non_deduced_t<T> rtol = default_tolerance<T>(),
                             non_deduced_t<T> atol = default_tolerance<T>()) noexcept;
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] std::string to_string(const Matrix<T>& A,
                                     int digits = std::numeric_limits<T>::digits10);
 
-template <typename T>
+template <Scalar T>
 std::ostream& operator<<(std::ostream& os, const Matrix<T>& A);
 
 extern template class Matrix<float>;

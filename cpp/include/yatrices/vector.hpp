@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <algorithm>
 #include <cmath>
+#include <concepts>
 #include <initializer_list>
 #include <iosfwd>
 #include <limits>
@@ -18,15 +19,13 @@ struct UninitialisedTag {
 inline constexpr UninitialisedTag uninitialised{};
 
 template <typename T>
-struct non_deduced { using type = T; };
-template <typename T>
-using non_deduced_t = typename non_deduced<T>::type;
+concept Scalar = std::same_as<T, float> || std::same_as<T, double>;
 
 template <typename T>
+using non_deduced_t = std::type_identity_t<T>;
+
+template <Scalar T>
 class Vec {
-    static_assert(std::is_same_v<T, float> || std::is_same_v<T, double>,
-                  "Vec supports only float and double");
-
 public:
     using value_type = T;
     static constexpr std::size_t alignment = 64;
@@ -74,7 +73,7 @@ public:
     Vec& operator*=(T alpha) noexcept;
     Vec& operator/=(T alpha) noexcept;
 
-    template <typename F>
+    template <std::invocable<T> F>
     Vec& apply(F f) {
         for (std::size_t i = 0; i < size_; ++i) data_[i] = static_cast<T>(f(data_[i]));
         return *this;
@@ -107,62 +106,60 @@ private:
     std::size_t size_ = 0;
 };
 
-template <typename T> [[nodiscard]] Vec<T> operator+(const Vec<T>& a, const Vec<T>& b);
-template <typename T> [[nodiscard]] Vec<T> operator-(const Vec<T>& a, const Vec<T>& b);
-template <typename T> [[nodiscard]] Vec<T> operator-(const Vec<T>& a);
-template <typename T> [[nodiscard]] Vec<T> operator*(const Vec<T>& a, non_deduced_t<T> alpha);
-template <typename T> [[nodiscard]] Vec<T> operator*(non_deduced_t<T> alpha, const Vec<T>& a);
-template <typename T> [[nodiscard]] Vec<T> operator/(const Vec<T>& a, non_deduced_t<T> alpha);
+template <Scalar T> [[nodiscard]] Vec<T> operator+(const Vec<T>& a, const Vec<T>& b);
+template <Scalar T> [[nodiscard]] Vec<T> operator-(const Vec<T>& a, const Vec<T>& b);
+template <Scalar T> [[nodiscard]] Vec<T> operator-(const Vec<T>& a);
+template <Scalar T> [[nodiscard]] Vec<T> operator*(const Vec<T>& a, non_deduced_t<T> alpha);
+template <Scalar T> [[nodiscard]] Vec<T> operator*(non_deduced_t<T> alpha, const Vec<T>& a);
+template <Scalar T> [[nodiscard]] Vec<T> operator/(const Vec<T>& a, non_deduced_t<T> alpha);
 
-template <typename T> [[nodiscard]] inline Vec<T> operator+(Vec<T>&& a, const Vec<T>& b) { a += b;        return std::move(a); }
-template <typename T> [[nodiscard]] inline Vec<T> operator-(Vec<T>&& a, const Vec<T>& b) { a -= b;        return std::move(a); }
-template <typename T> [[nodiscard]] inline Vec<T> operator-(Vec<T>&& a)                  { a.scale(T{-1}); return std::move(a); }
-template <typename T> [[nodiscard]] inline Vec<T> operator*(Vec<T>&& a, non_deduced_t<T> alpha)         { a *= alpha;     return std::move(a); }
-template <typename T> [[nodiscard]] inline Vec<T> operator*(non_deduced_t<T> alpha, Vec<T>&& a)         { a *= alpha;     return std::move(a); }
-template <typename T> [[nodiscard]] inline Vec<T> operator/(Vec<T>&& a, non_deduced_t<T> alpha)         { a /= alpha;     return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Vec<T> operator+(Vec<T>&& a, const Vec<T>& b) { a += b;        return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Vec<T> operator-(Vec<T>&& a, const Vec<T>& b) { a -= b;        return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Vec<T> operator-(Vec<T>&& a)                  { a.scale(T{-1}); return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Vec<T> operator*(Vec<T>&& a, non_deduced_t<T> alpha)         { a *= alpha;     return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Vec<T> operator*(non_deduced_t<T> alpha, Vec<T>&& a)         { a *= alpha;     return std::move(a); }
+template <Scalar T> [[nodiscard]] inline Vec<T> operator/(Vec<T>&& a, non_deduced_t<T> alpha)         { a /= alpha;     return std::move(a); }
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] Vec<T> hadamard(const Vec<T>& x, const Vec<T>& y);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] Vec<T> cross(const Vec<T>& x, const Vec<T>& y);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] T angle(const Vec<T>& x, const Vec<T>& y);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] Vec<T> project(const Vec<T>& v, const Vec<T>& onto);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] Vec<T> lincomb(non_deduced_t<T> alpha, const Vec<T>& u, non_deduced_t<T> beta,
                              const Vec<T>& v);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] Vec<T> lerp(const Vec<T>& u, const Vec<T>& v, non_deduced_t<T> t);
 
-template <typename T> [[nodiscard]] T distance(const Vec<T>& x, const Vec<T>& y);
-template <typename T> [[nodiscard]] T distance1(const Vec<T>& x, const Vec<T>& y);
-template <typename T> [[nodiscard]] T distance_inf(const Vec<T>& x, const Vec<T>& y);
+template <Scalar T> [[nodiscard]] T distance(const Vec<T>& x, const Vec<T>& y);
+template <Scalar T> [[nodiscard]] T distance1(const Vec<T>& x, const Vec<T>& y);
+template <Scalar T> [[nodiscard]] T distance_inf(const Vec<T>& x, const Vec<T>& y);
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] T cosine_similarity(const Vec<T>& u, const Vec<T>& v);
 
-template <typename T> [[nodiscard]] bool operator==(const Vec<T>& x, const Vec<T>& y) noexcept;
-template <typename T> [[nodiscard]] bool operator!=(const Vec<T>& x, const Vec<T>& y) noexcept;
+template <Scalar T> [[nodiscard]] bool operator==(const Vec<T>& x, const Vec<T>& y) noexcept;
 
-template <typename T>
+template <std::floating_point T>
 constexpr T default_tolerance() noexcept {
     return T(1000) * std::numeric_limits<T>::epsilon();
 }
 
 template <typename A, typename B>
+    requires std::floating_point<std::common_type_t<A, B>>
 [[nodiscard]] inline bool approx_equal(
         A a_in, B b_in,
         non_deduced_t<std::common_type_t<A, B>> rtol = default_tolerance<std::common_type_t<A, B>>(),
         non_deduced_t<std::common_type_t<A, B>> atol = default_tolerance<std::common_type_t<A, B>>()) noexcept {
     using T = std::common_type_t<A, B>;
-    static_assert(std::is_floating_point_v<T>,
-                  "approx_equal needs at least one float or double argument");
     const T a = static_cast<T>(a_in);
     const T b = static_cast<T>(b_in);
     if (a == b) return true;
@@ -172,16 +169,16 @@ template <typename A, typename B>
     return diff <= std::max(atol, rtol * scale);
 }
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] bool allclose(const Vec<T>& x, const Vec<T>& y,
                             non_deduced_t<T> rtol = default_tolerance<T>(),
                             non_deduced_t<T> atol = default_tolerance<T>()) noexcept;
 
-template <typename T>
+template <Scalar T>
 [[nodiscard]] std::string to_string(const Vec<T>& v,
                                     int digits = std::numeric_limits<T>::digits10);
 
-template <typename T>
+template <Scalar T>
 std::ostream& operator<<(std::ostream& os, const Vec<T>& v);
 
 extern template class Vec<float>;

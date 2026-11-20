@@ -11,7 +11,7 @@ python -m pip install ".[test]"
 python -m pytest
 ```
 
-pip compiles the engine, so CMake and a C++17 compiler must be on your PATH.
+pip compiles the engine, so CMake and a C++20 compiler must be on your PATH.
 
 **On Windows**, MSYS2's g++ (the UCRT64 one, `C:\msys64\ucrt64\bin`) works with a normal python.org Python; this has been tested with Python 3.14. The build links the compiler's runtime into the module, because Python does not search `PATH` for the DLLs that a module needs. The free [Visual Studio Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) should work as well, but that route has not been tested.
 

@@ -35,36 +35,36 @@ using detail::zip_kernel;
 static_assert(Vec<double>::alignment == detail::kAlignment,
               "Vec::alignment and the allocator must agree");
 
-template <typename T>
+template <Scalar T>
 Vec<T>::Vec(std::size_t n) : data_(allocate<T>(n)), size_(n) {
     if (n != 0) std::memset(data_, 0, n * sizeof(T));
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>::Vec(std::size_t n, T value) : data_(allocate<T>(n)), size_(n) {
     std::fill(data_, data_ + n, value);
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>::Vec(std::size_t n, UninitialisedTag) : data_(allocate<T>(n)), size_(n) {}
 
-template <typename T>
+template <Scalar T>
 Vec<T>::Vec(std::initializer_list<T> xs)
     : data_(allocate<T>(xs.size())), size_(xs.size()) {
     std::copy(xs.begin(), xs.end(), data_);
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>::Vec(const Vec& other) : data_(allocate<T>(other.size_)), size_(other.size_) {
     if (size_ != 0) std::memcpy(data_, other.data_, size_ * sizeof(T));
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>::Vec(Vec&& other) noexcept
     : data_(std::exchange(other.data_, nullptr)),
       size_(std::exchange(other.size_, 0)) {}
 
-template <typename T>
+template <Scalar T>
 Vec<T>& Vec<T>::operator=(const Vec& other) {
     if (this == &other) return *this;
     if (size_ == other.size_) {
@@ -76,7 +76,7 @@ Vec<T>& Vec<T>::operator=(const Vec& other) {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>& Vec<T>::operator=(Vec&& other) noexcept {
     if (this != &other) {
         release(data_);
@@ -86,41 +86,41 @@ Vec<T>& Vec<T>::operator=(Vec&& other) noexcept {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>::~Vec() {
     release(data_);
 }
 
-template <typename T>
+template <Scalar T>
 void Vec<T>::swap(Vec& other) noexcept {
     std::swap(data_, other.data_);
     std::swap(size_, other.size_);
 }
 
-template <typename T>
+template <Scalar T>
 T& Vec<T>::at(std::size_t i) {
     if (i >= size_) throw IndexError("Vec::at", i, size_);
     return data_[i];
 }
 
-template <typename T>
+template <Scalar T>
 const T& Vec<T>::at(std::size_t i) const {
     if (i >= size_) throw IndexError("Vec::at", i, size_);
     return data_[i];
 }
 
-template <typename T>
+template <Scalar T>
 void Vec<T>::fill(T value) noexcept {
     if (size_ != 0) std::fill(aligned(data_), aligned(data_) + size_, value);
 }
 
-template <typename T>
+template <Scalar T>
 void Vec<T>::scale(T alpha) noexcept {
     T* YATRICES_RESTRICT p = aligned(data_);
     for (std::size_t i = 0; i < size_; ++i) p[i] *= alpha;
 }
 
-template <typename T>
+template <Scalar T>
 void Vec<T>::axpy(T alpha, const Vec& x) {
     if (size_ != x.size_) throw_size_mismatch("Vec::axpy", size_, x.size_);
     if (size_ == 0) return;
@@ -131,14 +131,14 @@ void Vec<T>::axpy(T alpha, const Vec& x) {
     detail::axpy_kernel(aligned(data_), aligned(x.data_), alpha, size_);
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::dot(const Vec& other) const {
     if (size_ != other.size_) throw_size_mismatch("Vec::dot", size_, other.size_);
     if (size_ == 0) return T{0};
     return detail::dot_kernel(aligned(data_), aligned(other.data_), size_);
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>& Vec<T>::operator+=(const Vec& other) {
     if (size_ != other.size_) throw_size_mismatch("Vec::operator+=", size_, other.size_);
     if (size_ == 0) return *this;
@@ -150,7 +150,7 @@ Vec<T>& Vec<T>::operator+=(const Vec& other) {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>& Vec<T>::operator-=(const Vec& other) {
     if (size_ != other.size_) throw_size_mismatch("Vec::operator-=", size_, other.size_);
     if (size_ == 0) return *this;
@@ -162,26 +162,26 @@ Vec<T>& Vec<T>::operator-=(const Vec& other) {
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>& Vec<T>::operator*=(T alpha) noexcept {
     scale(alpha);
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T>& Vec<T>::operator/=(T alpha) noexcept {
     T* YATRICES_RESTRICT p = aligned(data_);
     for (std::size_t i = 0; i < size_; ++i) p[i] /= alpha;
     return *this;
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::norm1() const noexcept {
     if (size_ == 0) return T{0};
     return sum_map_kernel(aligned(data_), size_, [](T v) { return std::fabs(v); });
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::norm_inf() const noexcept {
     T best{0};
     for (std::size_t i = 0; i < size_; ++i) {
@@ -192,7 +192,7 @@ T Vec<T>::norm_inf() const noexcept {
     return best;
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::norm2() const noexcept {
     if (size_ == 0) return T{0};
     const T sumsq = sum_map_kernel(aligned(data_), size_, [](T v) { return v * v; });
@@ -209,31 +209,31 @@ T Vec<T>::norm2() const noexcept {
     return m * std::sqrt(total);
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::sum() const noexcept {
     if (size_ == 0) return T{0};
     return sum_map_kernel(aligned(data_), size_, [](T v) { return v; });
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::mean() const {
     if (size_ == 0) throw EmptyVectorError("Vec::mean");
     return sum() / static_cast<T>(size_);
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::min() const {
     if (size_ == 0) throw EmptyVectorError("Vec::min");
     return *std::min_element(data_, data_ + size_);
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::max() const {
     if (size_ == 0) throw EmptyVectorError("Vec::max");
     return *std::max_element(data_, data_ + size_);
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> operator+(const Vec<T>& a, const Vec<T>& b) {
     if (a.size() != b.size()) throw_size_mismatch("operator+", a.size(), b.size());
     Vec<T> out(a.size(), uninitialised);
@@ -244,7 +244,7 @@ Vec<T> operator+(const Vec<T>& a, const Vec<T>& b) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> operator-(const Vec<T>& a, const Vec<T>& b) {
     if (a.size() != b.size()) throw_size_mismatch("operator-", a.size(), b.size());
     Vec<T> out(a.size(), uninitialised);
@@ -255,7 +255,7 @@ Vec<T> operator-(const Vec<T>& a, const Vec<T>& b) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> operator-(const Vec<T>& a) {
     Vec<T> out(a.size(), uninitialised);
     if (!a.empty()) {
@@ -264,7 +264,7 @@ Vec<T> operator-(const Vec<T>& a) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> operator*(const Vec<T>& a, non_deduced_t<T> alpha) {
     Vec<T> out(a.size(), uninitialised);
     if (!a.empty()) {
@@ -274,10 +274,10 @@ Vec<T> operator*(const Vec<T>& a, non_deduced_t<T> alpha) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> operator*(non_deduced_t<T> alpha, const Vec<T>& a) { return a * alpha; }
 
-template <typename T>
+template <Scalar T>
 Vec<T> operator/(const Vec<T>& a, non_deduced_t<T> alpha) {
     Vec<T> out(a.size(), uninitialised);
     if (!a.empty()) {
@@ -287,7 +287,7 @@ Vec<T> operator/(const Vec<T>& a, non_deduced_t<T> alpha) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> hadamard(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != y.size()) throw_size_mismatch("hadamard", x.size(), y.size());
     Vec<T> out(x.size(), uninitialised);
@@ -298,7 +298,7 @@ Vec<T> hadamard(const Vec<T>& x, const Vec<T>& y) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> cross(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != 3) throw WrongSizeError("cross", x.size(), 3);
     if (y.size() != 3) throw WrongSizeError("cross", y.size(), 3);
@@ -307,7 +307,7 @@ Vec<T> cross(const Vec<T>& x, const Vec<T>& y) {
                   x[0] * y[1] - x[1] * y[0]};
 }
 
-template <typename T>
+template <Scalar T>
 T angle(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != y.size()) throw_size_mismatch("angle", x.size(), y.size());
     const T nx = x.norm2();
@@ -317,7 +317,7 @@ T angle(const Vec<T>& x, const Vec<T>& y) {
     return std::acos(c);
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> project(const Vec<T>& v, const Vec<T>& onto) {
     if (v.size() != onto.size()) throw_size_mismatch("project", v.size(), onto.size());
     const T uu = onto.dot(onto);
@@ -329,7 +329,7 @@ Vec<T> project(const Vec<T>& v, const Vec<T>& onto) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 bool allclose(const Vec<T>& x, const Vec<T>& y, non_deduced_t<T> rtol,
               non_deduced_t<T> atol) noexcept {
     if (x.size() != y.size()) return false;
@@ -339,7 +339,7 @@ bool allclose(const Vec<T>& x, const Vec<T>& y, non_deduced_t<T> rtol,
     return true;
 }
 
-template <typename T>
+template <Scalar T>
 bool Vec<T>::all_finite() const noexcept {
     for (std::size_t i = 0; i < size_; ++i) {
         if (!std::isfinite(data_[i])) return false;
@@ -347,7 +347,7 @@ bool Vec<T>::all_finite() const noexcept {
     return true;
 }
 
-template <typename T>
+template <Scalar T>
 std::string to_string(const Vec<T>& v, int digits) {
     if (digits < 1) digits = 1;
     std::string out = "[";
@@ -360,17 +360,17 @@ std::string to_string(const Vec<T>& v, int digits) {
     return out + "]";
 }
 
-template <typename T>
+template <Scalar T>
 std::ostream& operator<<(std::ostream& os, const Vec<T>& v) {
     return os << to_string(v);
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Vec<T>::ones(std::size_t n) {
     return Vec(n, T{1});
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Vec<T>::unit(std::size_t n, std::size_t k) {
     if (k >= n) throw IndexError("Vec::unit", k, n);
     Vec e(n);
@@ -378,7 +378,7 @@ Vec<T> Vec<T>::unit(std::size_t n, std::size_t k) {
     return e;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Vec<T>::linspace(T a, T b, std::size_t n) {
     Vec out(n, uninitialised);
     if (n == 0) return out;
@@ -392,7 +392,7 @@ Vec<T> Vec<T>::linspace(T a, T b, std::size_t n) {
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 std::size_t Vec<T>::argmin() const {
     if (size_ == 0) throw EmptyVectorError("Vec::argmin");
     std::size_t best = 0;
@@ -403,7 +403,7 @@ std::size_t Vec<T>::argmin() const {
     return best;
 }
 
-template <typename T>
+template <Scalar T>
 std::size_t Vec<T>::argmax() const {
     if (size_ == 0) throw EmptyVectorError("Vec::argmax");
     std::size_t best = 0;
@@ -414,14 +414,14 @@ std::size_t Vec<T>::argmax() const {
     return best;
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::prod() const noexcept {
     T p{1};
     for (std::size_t i = 0; i < size_; ++i) p *= data_[i];
     return p;
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::variance(bool sample) const {
     if (size_ == 0) throw EmptyVectorError("Vec::variance");
     if (sample && size_ < 2) throw WrongSizeError("Vec::variance (sample)", size_, 2);
@@ -430,33 +430,33 @@ T Vec<T>::variance(bool sample) const {
     return ss / static_cast<T>(sample ? size_ - 1 : size_);
 }
 
-template <typename T>
+template <Scalar T>
 T Vec<T>::stddev(bool sample) const {
     return std::sqrt(variance(sample));
 }
 
-template <typename T>
+template <Scalar T>
 void Vec<T>::normalise() {
     const T n = norm2();
     if (n == T{0}) throw ZeroVectorError("Vec::normalise");
     *this /= n;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> Vec<T>::normalised() const {
     const T n = norm2();
     if (n == T{0}) throw ZeroVectorError("Vec::normalised");
     return *this / n;
 }
 
-template <typename T>
+template <Scalar T>
 std::size_t Vec<T>::count_nonzero(T tol) const noexcept {
     std::size_t c = 0;
     for (std::size_t i = 0; i < size_; ++i) c += (std::fabs(data_[i]) > tol) ? 1 : 0;
     return c;
 }
 
-template <typename T>
+template <Scalar T>
 bool Vec<T>::has_nan() const noexcept {
     for (std::size_t i = 0; i < size_; ++i) {
         if (std::isnan(data_[i])) return true;
@@ -464,7 +464,7 @@ bool Vec<T>::has_nan() const noexcept {
     return false;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> lincomb(non_deduced_t<T> alpha, const Vec<T>& u, non_deduced_t<T> beta,
                const Vec<T>& v) {
     if (u.size() != v.size()) throw_size_mismatch("lincomb", u.size(), v.size());
@@ -476,13 +476,13 @@ Vec<T> lincomb(non_deduced_t<T> alpha, const Vec<T>& u, non_deduced_t<T> beta,
     return out;
 }
 
-template <typename T>
+template <Scalar T>
 Vec<T> lerp(const Vec<T>& u, const Vec<T>& v, non_deduced_t<T> t) {
     if (u.size() != v.size()) throw_size_mismatch("lerp", u.size(), v.size());
     return lincomb(T{1} - t, u, t, v);
 }
 
-template <typename T>
+template <Scalar T>
 T distance(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != y.size()) throw_size_mismatch("distance", x.size(), y.size());
     if (x.empty()) return T{0};
@@ -495,7 +495,7 @@ T distance(const Vec<T>& x, const Vec<T>& y) {
     return (x - y).norm2();
 }
 
-template <typename T>
+template <Scalar T>
 T distance1(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != y.size()) throw_size_mismatch("distance1", x.size(), y.size());
     if (x.empty()) return T{0};
@@ -503,7 +503,7 @@ T distance1(const Vec<T>& x, const Vec<T>& y) {
                           [](T p, T q) { return std::fabs(p - q); });
 }
 
-template <typename T>
+template <Scalar T>
 T distance_inf(const Vec<T>& x, const Vec<T>& y) {
     if (x.size() != y.size()) throw_size_mismatch("distance_inf", x.size(), y.size());
     T best{0};
@@ -515,7 +515,7 @@ T distance_inf(const Vec<T>& x, const Vec<T>& y) {
     return best;
 }
 
-template <typename T>
+template <Scalar T>
 T cosine_similarity(const Vec<T>& u, const Vec<T>& v) {
     if (u.size() != v.size()) throw_size_mismatch("cosine_similarity", u.size(), v.size());
     const T nu = u.norm2();
@@ -524,18 +524,13 @@ T cosine_similarity(const Vec<T>& u, const Vec<T>& v) {
     return std::clamp(u.dot(v) / (nu * nv), T{-1}, T{1});
 }
 
-template <typename T>
+template <Scalar T>
 bool operator==(const Vec<T>& x, const Vec<T>& y) noexcept {
     if (x.size() != y.size()) return false;
     for (std::size_t i = 0; i < x.size(); ++i) {
         if (x[i] != y[i]) return false;
     }
     return true;
-}
-
-template <typename T>
-bool operator!=(const Vec<T>& x, const Vec<T>& y) noexcept {
-    return !(x == y);
 }
 
 template class Vec<float>;
@@ -574,7 +569,6 @@ template float distance1<float>(const Vec<float>&, const Vec<float>&);
 template float distance_inf<float>(const Vec<float>&, const Vec<float>&);
 template float cosine_similarity<float>(const Vec<float>&, const Vec<float>&);
 template bool operator==<float>(const Vec<float>&, const Vec<float>&) noexcept;
-template bool operator!=<float>(const Vec<float>&, const Vec<float>&) noexcept;
 template Vec<double> lincomb<double>(double, const Vec<double>&, double, const Vec<double>&);
 template Vec<double> lerp<double>(const Vec<double>&, const Vec<double>&, double);
 template double distance<double>(const Vec<double>&, const Vec<double>&);
@@ -582,6 +576,5 @@ template double distance1<double>(const Vec<double>&, const Vec<double>&);
 template double distance_inf<double>(const Vec<double>&, const Vec<double>&);
 template double cosine_similarity<double>(const Vec<double>&, const Vec<double>&);
 template bool operator==<double>(const Vec<double>&, const Vec<double>&) noexcept;
-template bool operator!=<double>(const Vec<double>&, const Vec<double>&) noexcept;
 
 }

@@ -240,7 +240,7 @@
 <text x="402" y="121" font-family="Latin Modern Roman" font-size="15" font-weight="700" font-style="normal" fill="url(#gLabel)" text-anchor="start" letter-spacing="3.4">LINEAR ALGEBRA  ·  TWO LANGUAGES</text>
 <text x="396" y="204" font-family="Latin Modern Roman" font-size="90" font-weight="700" font-style="normal" fill="#0e2b31" text-anchor="start" letter-spacing="-0.5">Yatrices</text>
 <line x1="402" y1="225" x2="980" y2="225" stroke="url(#gRule)" stroke-width="2.2"/>
-<text x="402" y="265" font-family="Latin Modern Roman" font-size="15" font-weight="700" font-style="normal" fill="url(#gLabel)" text-anchor="start" letter-spacing="3.6">C++17</text>
+<text x="402" y="265" font-family="Latin Modern Roman" font-size="15" font-weight="700" font-style="normal" fill="url(#gLabel)" text-anchor="start" letter-spacing="3.6">C++20</text>
 <text x="742" y="265" font-family="Latin Modern Roman" font-size="15" font-weight="700" font-style="normal" fill="url(#gLabel)" text-anchor="start" letter-spacing="3.6">PYTHON 3.10+</text>
 <text x="402" y="306" font-family="Latin Modern Roman" font-size="34" font-weight="700" font-style="normal" fill="#0e2b31" text-anchor="start" >YatricesEngine</text>
 <text x="742" y="306" font-family="Latin Modern Roman" font-size="34" font-weight="700" font-style="normal" fill="#0e2b31" text-anchor="start" >yatricespy</text>
