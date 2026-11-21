@@ -6,6 +6,23 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.0.5] - 2026-11-21
+
+A documentation release for yatricespy. No behaviour changes: the compiled module and the C++ engine are exactly as in 0.0.4.
+
+### Added
+
+**yatricespy (Python)**
+- `_yatricespy.pyi` now describes every class, method, property, operator, module function and error, with a worked example wherever one helps, so that your editor shows the explanation when you hover over a name.
+- The same file opens with the version and a short NumPy-style guide to using the package (`import yatricespy as yt`, `Vec`, `Matrix`, `@`, `.T`).
+
+### Changed
+- The version number is now 0.0.5 in `CMakeLists.txt`, `pyproject.toml` and `yatricespy.__version__`.
+- `python/README.md` says that the type hints carry these descriptions.
+
+### Notes
+- The descriptions were checked against `bindings/bindings.cpp` and `cpp/src`, which led to three corrections: `set_diagonal` raises `WrongSizeError`, and `add_to_rows` and `subtract_from_rows` raise `SizeMismatchError`.
+
 ## [0.0.4] - 2026-11-21
 
 `Matrix` reaches Python. Everything the C++ `Matrix` could do in 0.0.3 can now be done from yatricespy.
@@ -150,7 +167,8 @@ The first release. It provides a vector type in C++, which is also available fro
 ### Notes
 - Verified on Windows (MSYS2 g++, Python 3.14) and on Linux (g++, Python 3.13).
 
-[Unreleased]: https://github.com/yassinox12834/yatrices/compare/v0.0.4...HEAD
+[Unreleased]: https://github.com/yassinox12834/yatrices/compare/v0.0.5...HEAD
+[0.0.5]: https://github.com/yassinox12834/yatrices/compare/v0.0.4...v0.0.5
 [0.0.4]: https://github.com/yassinox12834/yatrices/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/yassinox12834/yatrices/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/yassinox12834/yatrices/compare/v0.0.1...v0.0.2

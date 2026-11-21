@@ -1,4 +1,4 @@
-"""yatricespy 0.0.4: Python front end of YatricesEngine (type stub).
+"""yatricespy 0.0.5: Python front end of YatricesEngine (type stub).
 
 Using it, the NumPy way
 -----------------------
@@ -19,15 +19,8 @@ Using it, the NumPy way
 
 Next version: commands
 ----------------------
-Example for 0.0.5. First change the number in CMakeLists.txt, pyproject.toml
-and yatricespy/__init__.py, and add an entry to CHANGELOG.md. Then:
-
-    git add -A
-    git commit -m "feat(python): short summary, release 0.0.5"
-    git push origin main
-    git tag -a v0.0.5 -m "yatrices 0.0.5"
-    git push origin v0.0.5
 """
+
 import builtins
 from collections.abc import Callable, Iterable, Iterator
 from typing import ClassVar, overload

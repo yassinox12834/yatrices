@@ -169,7 +169,7 @@ except yt.SizeMismatchError as e:
 
 ```
 python/
-├── yatricespy/   the package users import (plus type hints for your editor)
+├── yatricespy/   the package users import (plus type hints, with a description of every name, for your editor)
 ├── bindings/     pybind11 code that exposes the engine as _yatricespy
 ├── capi/         optional plain C interface, for ctypes (empty for now)
 ├── examples/     short scripts showing the library in use
