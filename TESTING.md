@@ -12,7 +12,7 @@ python -m pytest -k dot -v        # only the tests with "dot" in their name
 
 On Windows with MSYS2 installed, check that `python` is the interpreter you mean (`where python`), or write its full path, for example `& "C:\Users\you\AppData\Local\Python\bin\python.exe" -m pytest`.
 
-Expected result: `25 passed`.
+Expected result: `54 passed`.
 
 The tests live in two files:
 
@@ -20,8 +20,9 @@ The tests live in two files:
 |---|---|
 | `python/tests/test_smoke.py` | the package imports at all |
 | `python/tests/test_vec.py` | every part of `Vec` and `Vecf`: construction, indexing, arithmetic, products, norms, geometry, float comparisons and every error |
+| `python/tests/test_matrix.py` | every part of `Matrix` and `Matrixf`: construction, indexing, arithmetic, transpose, diagonals, row operations, reductions, broadcasting and every error |
 
-Most tests run twice, once for `Vec` (double) and once for `Vecf` (float), thanks to the `V` fixture at the top of `test_vec.py`.
+Most tests run twice, once for the double type and once for the float one, thanks to the `V` fixture at the top of `test_vec.py` and the `M` and `MV` fixtures at the top of `test_matrix.py`.
 
 ## C++ tests (ctest)
 
@@ -31,7 +32,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Fair warning: `cpp/tests/test_main.cpp` is still empty, so `ctest` will happily pass without checking a thing. For now, the Python tests are the real safety net, since every Python call runs the C++ code underneath. Proper C++ tests (Catch2 or GoogleTest) are on the list.
+`cpp/tests/test_main.cpp` holds the engine's own checks (230 of them since 0.0.2). The Python tests are a second safety net, since every Python call runs the C++ code underneath.
 
 ## Writing a test
 

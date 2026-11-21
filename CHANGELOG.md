@@ -6,6 +6,38 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [0.0.4] - 2026-11-21
+
+`Matrix` reaches Python. Everything the C++ `Matrix` could do in 0.0.3 can now be done from yatricespy.
+
+### Added
+
+**yatricespy (Python)**
+- `yt.Matrix` (float64, also `yt.Matrixd`) and `yt.Matrixf` (float32), bound to `Matrix<double>` and `Matrix<float>`.
+  - Constructors for zeros (`Matrix(2, 3)`), a constant (`Matrix(2, 3, 7.0)`) and a list of rows (`Matrix([[1, 2], [3, 4]])`, which also accepts a 2-D NumPy array).
+  - `shape`, `rows`, `cols`, `size`, `len`, `empty` and `is_square`.
+  - `A[i, j]` for reading and writing, with negative indices; row and column indices are checked separately and the error names the axis.
+  - `tolist`, `flatten`, `reshape`, `copy`, `copy.copy` and `copy.deepcopy`.
+  - `repr` and `str` with aligned columns, for example `Matrix([[1, 2],\n        [3, 4]])`.
+  - Arithmetic, entry by entry: `+`, `-`, unary `-` and `+`, `*` and `/` by a scalar, and `+=`, `-=`, `*=`, `/=` in place. Also `fill`, `scale` and `apply(f)`.
+  - `transposed()`, the NumPy-style property `A.T`, and `transpose_in_place()`.
+  - `trace`, `diagonal(k)` and `set_diagonal(d, k)`.
+  - The three row operations `swap_rows`, `scale_row` and `add_row_multiple`, with checked indices.
+  - Reductions: `sum`, `mean`, `min`, `max`, `max_abs`, `all_finite`, `sum_rows`, `sum_cols`, `mean_rows` and `mean_cols`.
+  - `dtype`, `alignment` and `default_tolerance()`, as on `Vec`.
+- New module functions `yt.add_to_rows`, `yt.subtract_from_rows` and `yt.centre_columns`; `yt.hadamard` and `yt.allclose` now accept two matrices as well as two vectors.
+- The four matrix errors as Python classes: `yt.ShapeMismatchError`, `yt.NotSquareError`, `yt.RaggedRowsError` and `yt.EmptyMatrixError`. Each inherits from `yt.YatricesError` and from `ValueError`.
+- Type hints for all of the above in `_yatricespy.pyi`.
+- `python/examples/matrix_tour.py` and `python/tests/test_matrix.py` (29 tests against NumPy, run for both `Matrix` and `Matrixf`).
+
+### Changed
+- The version number is now 0.0.4 in `CMakeLists.txt`, `pyproject.toml` and `yatricespy.__version__`.
+- The main README, `python/README.md` and `TESTING.md` describe the Python `Matrix`; `TESTING.md` no longer claims that the C++ tests are empty.
+
+### Notes
+- Verified on Linux (g++ 11.4, Python 3.10): 54 Python tests pass (25 for `Vec`, 29 for `Matrix`) and both Python examples run.
+- `A @ B` and `A @ x` are still missing; the matrix products are the first item of `ROADMAP.md`.
+
 ## [0.0.3] - 2026-11-20
 
 The whole project moves from C++17 to C++20. The public API is unchanged: code that compiled against 0.0.2 compiles against 0.0.3 with a C++20 compiler.
@@ -118,7 +150,8 @@ The first release. It provides a vector type in C++, which is also available fro
 ### Notes
 - Verified on Windows (MSYS2 g++, Python 3.14) and on Linux (g++, Python 3.13).
 
-[Unreleased]: https://github.com/yassinox12834/yatrices/compare/v0.0.3...HEAD
+[Unreleased]: https://github.com/yassinox12834/yatrices/compare/v0.0.4...HEAD
+[0.0.4]: https://github.com/yassinox12834/yatrices/compare/v0.0.3...v0.0.4
 [0.0.3]: https://github.com/yassinox12834/yatrices/compare/v0.0.2...v0.0.3
 [0.0.2]: https://github.com/yassinox12834/yatrices/compare/v0.0.1...v0.0.2
 [0.0.1]: https://github.com/yassinox12834/yatrices/releases/tag/v0.0.1

@@ -47,6 +47,11 @@ y = yt.Vec([4, 5, 6])
 print(x + y)           # [5, 7, 9]
 print(x @ y)           # 32.0
 print(yt.cross(x, y))  # [-3, 6, -3]
+
+A = yt.Matrix([[1, 2], [3, 4]])
+print(A.T)             # [[1, 3],
+                       #  [2, 4]]
+print(A.trace())       # 5.0
 ```
 
 Importing it as `yt` is wholeheartedly recommended: write `import yatricespy as yt`. It's the same kind of acronym as `import numpy as np`, short to type and instantly recognisable, and every example in this repository uses it.
@@ -67,9 +72,8 @@ Each side has its own guide with the full list of what's available: [Python](pyt
 
 The vector type is done, in both languages: `Vec` (double) and `Vecf` (float), with arithmetic, `dot`, `cross`, norms, sums and means, `angle`, `project`, `allclose`, and error messages that actually tell you what went wrong.
 
-Since 0.0.2 the C++ engine also has a `Matrix` type (`Matrixf` and `Matrixd`): arithmetic, transpose, trace, diagonals, row operations, reductions and broadcasting, all checked by real C++ tests. But even the "finished" bits have plenty left to do:
+The `Matrix` type arrived in the C++ engine in 0.0.2 and in Python in 0.0.4: `Matrix` (double) and `Matrixf` (float), with arithmetic, transpose, trace, diagonals, row operations, reductions and broadcasting, checked by real C++ tests and by Python tests against NumPy. But even the "finished" bits have plenty left to do:
 
-- `Matrix` is C++ only for now; yatricespy can't see it yet
 - there's no matrix-vector or matrix-matrix product (that's next, see the roadmap)
 - the newer `Vec` functions (`argmin`, `argmax`, `normalise`, `==`, ...) aren't in Python yet either
 - you can't convert to or from NumPy arrays without going through a list
